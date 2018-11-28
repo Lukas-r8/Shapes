@@ -37,7 +37,7 @@ class MainViewController: UIViewController {
                                [sin(angle), cos(angle)]]
     
     // rotation velocity
-    var velocity: CGFloat = 0
+    var velocity: CGFloat = 0.1
     
     
     
