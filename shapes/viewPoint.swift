@@ -9,26 +9,60 @@
 import Foundation
 import UIKit
 
-
 class viewPoint: UIView {
+
+    var keyValue: Int
     
-    var keyValue: CGFloat!
     
-    required init(controller: MainViewController) {
+    lazy var identifierLabel: UILabel = {
+        let label = UILabel()
+        label.frame.size = frame.size
+        label.textAlignment = NSTextAlignment.center
+        label.textColor = UIColor.black
+        return label
+    }()
+    
+    
+    var isControlPoint = false {
+        didSet{
+            if isControlPoint{
+                backgroundColor = UIColor.green
+                identifierLabel.text = "c\(keyValue)"
+            }
+        }
+    }
+    
+    let controller: MainViewController
+    
+    required init(controller: MainViewController, keyValue: Int) {
+        self.keyValue = keyValue
+        self.controller = controller
         super.init(frame: .zero)
-        setUp(main: controller)
+        setUp()
     }
     
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    
+    
 
-    func setUp(main: MainViewController){
+    func setUp(){
         frame.size = CGSize(width: 20, height: 20)
         layer.cornerRadius = frame.width / 2
         backgroundColor = UIColor.red
-        addGestureRecognizer(UIPanGestureRecognizer(target: main, action: #selector(main.changePointPositionIndividually)))
-
+        addGestureRecognizer(UIPanGestureRecognizer(target: controller, action: #selector(controller.changePointPositionIndividually)))
+        layer.shadowColor = UIColor.lightGray.cgColor
+        layer.shadowOpacity = 1
+        layer.shadowOffset = CGSize(width: 0, height: 2)
+        identifierLabel.center = center
+        identifierLabel.text = keyValue == 0 ? nil : "\(keyValue)"
+        addSubview(identifierLabel)
     }
-
+    
+    
 }
+
+
+
+

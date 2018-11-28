@@ -9,15 +9,88 @@
 import UIKit
 
 class MainViewController: UIViewController {
+    var allOriginalPoints = [Int:(point: CGPoint,controlPoint: CGPoint)]()
+    var allPoints = [Int:(viewPoint: viewPoint,controlPoint: viewPoint)]()
     
-    var allPointsAdded = [[CGFloat:viewPoint]]()
+    
+    // scale shape
+    var scaleFactor:CGFloat = 1 {
+        didSet{
+            scaleMatrix = [[scaleFactor,0],
+                          [0,scaleFactor]]
+        }
+    }
+    
+    lazy var scaleMatrix: [[CGFloat]] = [[scaleFactor,0],
+                                         [0,scaleFactor]]
+
+    
+    // rotation shape
+    var angle:CGFloat = 0 {
+        didSet{
+            rotationMatrix = [[cos(angle), -sin(angle)],
+                              [sin(angle), cos(angle)]]
+        }
+    }
+    
+    lazy var rotationMatrix = [[cos(angle), -sin(angle)],
+                               [sin(angle), cos(angle)]]
+    
+    // rotation velocity
+    var velocity: CGFloat = 0
+    
+    
+    
+    
+    var imageCenterPoint = CGPoint.zero {
+        didSet{
+            centerImage.center = imageCenterPoint
+        }
+    }
+    
+    let centerImage: UIView = {
+        let cnt  = UIView()
+        cnt.backgroundColor = UIColor.purple
+        cnt.frame.size = CGSize(width: 30, height: 30)
+        cnt.layer.cornerRadius = cnt.frame.width / 2
+        return cnt
+    }()
+    
+    
+    
+    
+
+    var lastPoint = CGPoint.zero
     var bezierPath: UIBezierPath!
+    
+    var shapePoints:CGFloat = 5
+    var xRadius: CGFloat = 120
+    var yRadius:CGFloat = 120
+    var proportion:CGFloat = 1
+    
+    
+    
+    lazy var velocitySlider: UISlider = {
+        let slider = UISlider()
+        slider.translatesAutoresizingMaskIntoConstraints = false
+        slider.thumbTintColor = UIColor.black
+        slider.minimumValue = -0.02
+        slider.maximumValue = 0.02
+        slider.value = 0
+        slider.addTarget(self, action: #selector(changeVelocity), for: .valueChanged)
+        return slider
+    }()
+    
+    @objc func changeVelocity(sender: UISlider){
+        velocity = CGFloat(sender.value)
+    }
+    
     
     let shapeSlider: UISlider = {
         let slider = UISlider()
         slider.translatesAutoresizingMaskIntoConstraints = false
         slider.thumbTintColor = UIColor.red
-        slider.minimumValue = 0
+        slider.minimumValue = 2
         slider.maximumValue = 70
         slider.value = 5
         slider.addTarget(self, action: #selector(changeNumberOfFaces), for: .valueChanged)
@@ -41,12 +114,10 @@ class MainViewController: UIViewController {
         slider.thumbTintColor = UIColor.green
         slider.minimumValue = 5
         slider.maximumValue = 150
-        slider.value = 5
+        slider.value = 120
         slider.addTarget(self, action: #selector(changeX), for: .valueChanged)
         return slider
     }()
-    
-   
     
     let ySlider: UISlider = {
         let slider = UISlider()
@@ -54,11 +125,10 @@ class MainViewController: UIViewController {
         slider.thumbTintColor = UIColor.orange
         slider.minimumValue = 5
         slider.maximumValue = 150
-        slider.value = 5
+        slider.value = 120
         slider.addTarget(self, action: #selector(changeY), for: .valueChanged)
         return slider
     }()
-    
 
     lazy var valueLabel: UILabel = {
         let label = UILabel()
@@ -71,10 +141,11 @@ class MainViewController: UIViewController {
     
     let shapeLayer: CAShapeLayer = {
         let layer = CAShapeLayer()
-        layer.lineWidth = 5
+        layer.lineWidth = 1
         layer.strokeColor = UIColor.blue.cgColor
         layer.lineJoin = CAShapeLayerLineJoin.round
-        layer.fillColor = UIColor.clear.cgColor
+        layer.fillRule = CAShapeLayerFillRule.evenOdd
+        layer.fillColor = UIColor.green.withAlphaComponent(0.5).cgColor
         return layer
     }()
     
@@ -82,85 +153,49 @@ class MainViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .white
         setUpViews()
+        let doubleTap = UITapGestureRecognizer(target: self, action: #selector(animations))
+        doubleTap.numberOfTapsRequired = 2
+        view.addGestureRecognizer(doubleTap)
+        view.addSubview(centerImage)
     }
     
+    lazy var display: CADisplayLink = {
+        let dis = CADisplayLink(target: self, selector: #selector(rotateAllPoints))
+        dis.add(to: RunLoop.current, forMode: RunLoop.Mode.common)
+        dis.isPaused = true
+        return dis
+    }()
     
-   
-    
-    func drawCircle(initialPoint:CGPoint ,radiusX: CGFloat,radiusY: CGFloat,numberOfPoints:CGFloat) -> CGPath {
-        allPointsAdded = [[CGFloat:viewPoint]]()
-        var iteration = 0
-        view.subviews.forEach { (point) in
-            if let point = point as? viewPoint {
-                point.removeFromSuperview()
-            }
-        }
-        
-        let precision = 360/numberOfPoints
-        bezierPath = UIBezierPath()
-        bezierPath.lineWidth = 5
-        bezierPath.move(to: CGPoint(x: initialPoint.x + radiusX, y: initialPoint.y))
-        
-        for i in stride(from: CGFloat(0), through: CGFloat(360), by: precision){
-            let radians = CGFloat(i) * CGFloat.pi/180
-            let x = initialPoint.x + radiusX * cos(radians)
-            let y = initialPoint.y + radiusY * sin(radians)
-            
-            
-            let point = viewPoint(controller: self)
-            point.center = CGPoint(x: x, y: y)
-            point.keyValue = i
-            view.addSubview(point)
-            allPointsAdded.append([i:point])
-            
-            bezierPath.addLine(to: allPointsAdded[iteration][i]?.center ?? point.center)
-            iteration += 1
-        }
-        
-        let lastView = allPointsAdded.last?.first?.value
-        lastView?.removeFromSuperview()
-        allPointsAdded.removeLast()
-        bezierPath.close()
-        return bezierPath.cgPath
-    }
-    
-    @objc func changePointPositionIndividually(pan: UIPanGestureRecognizer){
-        guard let viewTouched = pan.view as? viewPoint else {return}
-        let location = pan.location(in: view)
-        switch pan.state {
-            case .changed:
-                var index = 0
-                for (i,dict) in allPointsAdded.enumerated(){
-                    if dict.first?.value.keyValue == viewTouched.keyValue{
-                       index = i
-                    }
-                }
-                guard let viewToBeChanged = allPointsAdded[index].first?.value else {return}
-                viewToBeChanged.center = location
-                shapeLayer.path = updatePath(updatedView: viewToBeChanged)
+    @objc func animations(tap: UITapGestureRecognizer){
 
-            default:
-                print("default")
-            
-        }
-    }
-    
-    func updatePath(updatedView: viewPoint) -> CGPath {
-        var firstIteration = true
-        bezierPath = UIBezierPath()
-        allPointsAdded.forEach { (dict) in
-            if firstIteration{
-                bezierPath.move(to: (dict.first?.value.center)!)
-                firstIteration = !firstIteration
-            }
-            bezierPath.addLine(to: (dict.first?.value.center)!)
-        }
+        display.isPaused = !display.isPaused
         
-        bezierPath.close()
-        return bezierPath.cgPath
+//        if !display.isPaused {angle = 0 }
+   
     }
-    
-    
+
+    @objc func rotateAllPoints(){
+
+        let centerX = imageCenterPoint.x
+        let centerY = imageCenterPoint.y
+        
+        
+        for i in 0 ..< allOriginalPoints.count {
+            let pt = allOriginalPoints[i]!.point
+            let cont = allOriginalPoints[i]!.controlPoint
+            guard let rotatedPoint = multMatrix(matrixA: rotationMatrix, matrixB: [[pt.x - centerX],[pt.y - centerY]]) else {return}
+            guard let rotatedControl = multMatrix(matrixA: rotationMatrix, matrixB: [[cont.x - centerX],[cont.y - centerY]]) else {return}
+            
+            allPoints[i]!.viewPoint.center = CGPoint(x: rotatedPoint[0][0] + centerX, y: rotatedPoint[1][0] + centerY)
+            allPoints[i]!.controlPoint.center = CGPoint(x: rotatedControl[0][0] + centerX , y: rotatedControl[1][0] + centerY)
+
+            shapeLayer.path = updatePath(nil)
+
+            // -0.02 ... +0.02 --> velocity range values
+            
+            angle += velocity
+        }
+    }
 
 }
 

@@ -15,6 +15,7 @@
 		127627212192711B00E9EEE2 /* shapesUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 127627202192711B00E9EEE2 /* shapesUITests.swift */; };
 		1276272F2192E76900E9EEE2 /* viewPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1276272E2192E76900E9EEE2 /* viewPoint.swift */; };
 		127627312193044500E9EEE2 /* MainExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 127627302193044500E9EEE2 /* MainExtension.swift */; };
+		12875AD021A415000058CC6B /* Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12875ACF21A415000058CC6B /* Extension.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,6 +50,7 @@
 		127627222192711B00E9EEE2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		1276272E2192E76900E9EEE2 /* viewPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = viewPoint.swift; sourceTree = "<group>"; };
 		127627302193044500E9EEE2 /* MainExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainExtension.swift; sourceTree = "<group>"; };
+		12875ACF21A415000058CC6B /* Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extension.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,6 +105,7 @@
 				127627022192711900E9EEE2 /* MainViewController.swift */,
 				127627302193044500E9EEE2 /* MainExtension.swift */,
 				1276272E2192E76900E9EEE2 /* viewPoint.swift */,
+				12875ACF21A415000058CC6B /* Extension.swift */,
 				127627072192711B00E9EEE2 /* Assets.xcassets */,
 				127627092192711B00E9EEE2 /* LaunchScreen.storyboard */,
 				1276270C2192711B00E9EEE2 /* Info.plist */,
@@ -258,6 +261,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				12875AD021A415000058CC6B /* Extension.swift in Sources */,
 				127627312193044500E9EEE2 /* MainExtension.swift in Sources */,
 				127627032192711900E9EEE2 /* MainViewController.swift in Sources */,
 				127627012192711900E9EEE2 /* AppDelegate.swift in Sources */,
