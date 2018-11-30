@@ -56,7 +56,7 @@ class viewPoint: UIView {
         layer.shadowOpacity = 1
         layer.shadowOffset = CGSize(width: 0, height: 2)
         identifierLabel.center = center
-        identifierLabel.text = keyValue == 0 ? nil : "\(keyValue)"
+        identifierLabel.text = keyValue == 0 ? "K" : "\(keyValue)"
         addSubview(identifierLabel)
     }
     

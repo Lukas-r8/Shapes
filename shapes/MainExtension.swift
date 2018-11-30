@@ -11,31 +11,68 @@ import UIKit
 
 
 
-
 extension MainViewController {
     // SLIDER EXTENSIONS....
     @objc func changeX(sender: UISlider){
         xRadius = CGFloat(floor(sender.value))
         shapeLayer.path = drawCircle(initialPoint: view.center)
-        valueLabel.text = "FacesNumber: \(floor(shapeSlider.value)) x: \(floor(xSlider.value * proportionSlider.value)) y:\(floor(ySlider.value * proportionSlider.value))"
+        valueLabel.text = "Number of faces: \(floor(shapeSlider.value))"
     }
     
     @objc func changeY(sender: UISlider){
         yRadius = CGFloat(floor(sender.value))
         shapeLayer.path = drawCircle(initialPoint: view.center)
-        valueLabel.text = "FacesNumber: \(floor(shapeSlider.value)) x: \(floor(xSlider.value * proportionSlider.value)) y:\(floor(ySlider.value * proportionSlider.value))"
+        valueLabel.text = "Number of faces: \(floor(shapeSlider.value))"
     }
     
     @objc func changeNumberOfFaces(sender: UISlider){
         shapePoints = CGFloat(floor(shapeSlider.value))
         shapeLayer.path = drawCircle(initialPoint: view.center)
-        valueLabel.text = "FacesNumber: \(floor(shapeSlider.value)) x: \(floor(xSlider.value * proportionSlider.value)) y:\(floor(ySlider.value * proportionSlider.value))"
+        valueLabel.text = "Number of faces: \(floor(shapeSlider.value))"
     }
     
-    @objc func changeProportion(sender: UISlider){
-        proportion = CGFloat(sender.value)
-
-        valueLabel.text = "FacesNumber: \(floor(shapeSlider.value)) x: \(floor(xSlider.value * proportionSlider.value)) y:\(floor(ySlider.value * proportionSlider.value))"
+    @objc func changeProportion(gesture: UIPinchGestureRecognizer){
+        switch gesture.state {
+        case .began:
+            fallthrough
+        case .changed:
+            scaleFactor = gesture.scale
+            updateProportion()
+        case .ended:
+            updateAllOriginalPoints()
+        default:
+            break
+        }
+        
+       
+ 
+        valueLabel.text = "Number of faces: \(floor(shapeSlider.value))"
+    }
+    
+    func updateProportion(){
+        let centerX = imageCenterPoint.x
+        let centerY = imageCenterPoint.y
+        
+        for (index) in 0 ..< allOriginalPoints.count{
+            
+            let point = allOriginalPoints[index]!.point
+            let control = allOriginalPoints[index]!.controlPoint
+            
+            guard let scaledPoints = multMatrix(matrixA: scaleMatrix, matrixB: [[point.x - centerX],[point.y - centerY]]) else {return}
+            guard let scaledControlPoints = multMatrix(matrixA: scaleMatrix, matrixB: [[control.x - centerX],[control.y - centerY]]) else {return}
+            
+           
+            
+            UIView.animate(withDuration: 1, animations: {
+                self.allPoints[index]?.viewPoint.center = CGPoint(x: scaledPoints[0][0] + centerX, y: scaledPoints[1][0] + centerY)
+                self.allPoints[index]?.controlPoint.center = CGPoint(x: scaledControlPoints[0][0] + centerX, y: scaledControlPoints[1][0] + centerY)
+            })
+            updatePath(nil)
+            
+            
+        }
+        
+//        updateAllOriginalPoints()
     }
     
     
@@ -44,16 +81,15 @@ extension MainViewController {
         view.layer.addSublayer(shapeLayer)
         shapeLayer.path = drawCircle(initialPoint: view.center)
         view.addSubview(shapeSlider)
-        view.addSubview(proportionSlider)
         view.addSubview(valueLabel)
         view.addSubview(xSlider)
         view.addSubview(ySlider)
+        view.addSubview(microphoneButton)
         
         view.addSubview(velocitySlider)
         
         xSlider.transform = CGAffineTransform(rotationAngle: 90 * .pi / 180)
         ySlider.transform = CGAffineTransform(rotationAngle: 90 * .pi / 180)
-        
         
         xSlider.widthAnchor.constraint(equalToConstant: 400).isActive = true
         xSlider.heightAnchor.constraint(equalToConstant: 40).isActive = true
@@ -70,10 +106,6 @@ extension MainViewController {
         shapeSlider.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -30).isActive = true
         shapeSlider.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
         
-        proportionSlider.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.8).isActive = true
-        proportionSlider.heightAnchor.constraint(equalToConstant: 40).isActive = true
-        proportionSlider.bottomAnchor.constraint(equalTo: shapeSlider.topAnchor, constant: -10).isActive = true
-        proportionSlider.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
         
         valueLabel.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.8).isActive = true
         valueLabel.heightAnchor.constraint(equalToConstant: 40).isActive = true
@@ -85,6 +117,10 @@ extension MainViewController {
         velocitySlider.topAnchor.constraint(equalTo: valueLabel.bottomAnchor, constant: 10).isActive = true
         velocitySlider.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
         
+        microphoneButton.widthAnchor.constraint(equalToConstant: 80).isActive = true
+        microphoneButton.heightAnchor.constraint(equalToConstant: 80).isActive = true
+        microphoneButton.rightAnchor.constraint(equalTo: view.rightAnchor, constant: -30).isActive = true
+        microphoneButton.bottomAnchor.constraint(equalTo: shapeSlider.topAnchor, constant: -10).isActive = true
     }
     
     
@@ -102,9 +138,6 @@ extension MainViewController {
         let precision = 360/shapePoints
         bezierPath = UIBezierPath()
         bezierPath.lineWidth = 5
-//        let iniPoint = CGPoint(x: initialPoint.x + (xRadius * proportion), y: initialPoint.y)
-//        lastPoint = iniPoint
-        
         
         for (index,i) in stride(from: CGFloat(0), through: CGFloat(360), by: precision).enumerated(){
             let radians = CGFloat(i) * CGFloat.pi / 180
@@ -114,16 +147,12 @@ extension MainViewController {
             let currentPoint = CGPoint(x: x, y: y)
             let midPoint = CGPoint(x: (lastPoint.x * 0.5 + currentPoint.x * 0.5) , y: (lastPoint.y * 0.5 + currentPoint.y * 0.5))
             
-            
             let point = viewPoint(controller: self, keyValue: index)
             point.center = currentPoint
-            
             
             let controlPoint = viewPoint(controller: self, keyValue: index)
             controlPoint.center = midPoint
             controlPoint.isControlPoint = true
-            
-            
             
             view.addSubview(point)
             view.addSubview(controlPoint)
@@ -148,6 +177,7 @@ extension MainViewController {
         let lastView = allPoints[allPoints.count - 1]!.viewPoint
         firstView.center = lastView.center
         bezierPath.close()
+        
         return bezierPath.cgPath
     }
     
@@ -162,39 +192,49 @@ extension MainViewController {
             if viewTouched.isControlPoint {
                 let controlToBeChanged = allPoints[viewTouched.keyValue]!.controlPoint
                 controlToBeChanged.center = location
-                shapeLayer.path = updatePath(controlToBeChanged)
-                
+                updatePath(nil)
+                centerImage.center = imageCenterPoint
+
             } else {
                 let viewToBeChanged = allPoints[viewTouched.keyValue]!.viewPoint
                 viewToBeChanged.center = location
-                shapeLayer.path = updatePath(viewToBeChanged)
+                updatePath(nil)
             }
         case .ended:
-            allOriginalPoints = [Int:(point: CGPoint, controlPoint: CGPoint)]()
-            allPoints.forEach { (dict) in allOriginalPoints[dict.key] = (point: dict.value.viewPoint.center, controlPoint: dict.value.controlPoint.center)}
+            updateAllOriginalPoints()
 
         default:
             break
         }
     }
     
-    func updatePath(_ viewToBeChanged: viewPoint?) -> CGPath {
+    func updateAllOriginalPoints(){
+        timerUpdate?.invalidate()
+        timerUpdate = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: false, block: { (_) in
+            self.allOriginalPoints = [Int:(point: CGPoint, controlPoint: CGPoint)]()
+            self.allPoints.forEach { (dict) in self.allOriginalPoints[dict.key] = (point: dict.value.viewPoint.center, controlPoint: dict.value.controlPoint.center)}
+            self.timerUpdate?.invalidate()
+        })
+    }
+    
+    func updatePath(_ viewToBeChanged: viewPoint?){
         var firstIteration = true
         
         bezierPath = UIBezierPath()
         
         var xSum = CGFloat(0)
         var ySum = CGFloat(0)
-        
+        let divisor =  CGFloat(allOriginalPoints.count * 2 - 2)
+
         for index in 0 ..< allPoints.count {
             if firstIteration{
-                bezierPath.move(to: allPoints[index]!.viewPoint.center)
+                bezierPath.move(to: allPoints[allPoints.count - 1]!.viewPoint.center)
                 firstIteration = !firstIteration
                 continue
             }
             
             let crestPoint = allPoints[index]!.controlPoint.center
-            let fromPoint = index == 0 ? allPoints[allPoints.count - 1]!.viewPoint.center : allPoints[index - 1]!.viewPoint.center
+            let fromPoint = index == 1 ? allPoints[allPoints.count - 1]!.viewPoint.center : allPoints[index - 1]!.viewPoint.center
             let toPoint = allPoints[index]!.viewPoint.center
             let fromCrestToX = fromPoint.x - crestPoint.x
             let fromCrestToY = fromPoint.y - crestPoint.y
@@ -210,13 +250,13 @@ extension MainViewController {
             xSum += allOriginalPoints[index]!.controlPoint.x + allOriginalPoints[index]!.point.x
             ySum += allOriginalPoints[index]!.controlPoint.y + allOriginalPoints[index]!.point.y
             
-            
+            imageCenterPoint = CGPoint(x: xSum / divisor, y: ySum / divisor)
+
 
             bezierPath.addQuadCurve(to: allPoints[index]!.viewPoint.center, controlPoint: control)
-
         }
-        let divisor =  CGFloat(allOriginalPoints.count * 2 - 2)
-        imageCenterPoint = CGPoint(x: xSum / divisor, y: ySum / divisor)
+        
+        
         
 
         let firstView = allPoints[0]!.viewPoint
@@ -225,7 +265,7 @@ extension MainViewController {
         bezierPath.close()
         
         
-        return bezierPath.cgPath
+        shapeLayer.path = bezierPath.cgPath
     }
     
    
