@@ -16,6 +16,7 @@
 		1276272F2192E76900E9EEE2 /* viewPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1276272E2192E76900E9EEE2 /* viewPoint.swift */; };
 		127627312193044500E9EEE2 /* MainExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 127627302193044500E9EEE2 /* MainExtension.swift */; };
 		12875AD021A415000058CC6B /* Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12875ACF21A415000058CC6B /* Extension.swift */; };
+		49F3260721B18C5900559A90 /* VocalCommandController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49F3260621B18C5900559A90 /* VocalCommandController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,6 +52,7 @@
 		1276272E2192E76900E9EEE2 /* viewPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = viewPoint.swift; sourceTree = "<group>"; };
 		127627302193044500E9EEE2 /* MainExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainExtension.swift; sourceTree = "<group>"; };
 		12875ACF21A415000058CC6B /* Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extension.swift; sourceTree = "<group>"; };
+		49F3260621B18C5900559A90 /* VocalCommandController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VocalCommandController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -109,6 +111,7 @@
 				127627072192711B00E9EEE2 /* Assets.xcassets */,
 				127627092192711B00E9EEE2 /* LaunchScreen.storyboard */,
 				1276270C2192711B00E9EEE2 /* Info.plist */,
+				49F3260621B18C5900559A90 /* VocalCommandController.swift */,
 			);
 			path = shapes;
 			sourceTree = "<group>";
@@ -264,6 +267,7 @@
 				12875AD021A415000058CC6B /* Extension.swift in Sources */,
 				127627312193044500E9EEE2 /* MainExtension.swift in Sources */,
 				127627032192711900E9EEE2 /* MainViewController.swift in Sources */,
+				49F3260721B18C5900559A90 /* VocalCommandController.swift in Sources */,
 				127627012192711900E9EEE2 /* AppDelegate.swift in Sources */,
 				1276272F2192E76900E9EEE2 /* viewPoint.swift in Sources */,
 			);
@@ -433,7 +437,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = BRUBD4845H;
+				DEVELOPMENT_TEAM = XX5UAEQF38;
 				INFOPLIST_FILE = shapes/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -451,7 +455,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = BRUBD4845H;
+				DEVELOPMENT_TEAM = XX5UAEQF38;
 				INFOPLIST_FILE = shapes/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
