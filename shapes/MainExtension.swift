@@ -58,16 +58,16 @@ extension MainViewController {
         
         for (index) in 0 ..< allOriginalPoints.count{
             
-            let point = allOriginalPoints[index]!.point
-            let control = allOriginalPoints[index]!.controlPoint
+            let point = allOriginalPoints[index].point
+            let control = allOriginalPoints[index].controlPoint
             
             guard let scaledPoints = multMatrix(matrixA: scaleMatrix, matrixB: [[point.x - centerX],[point.y - centerY]]) else {return}
             guard let scaledControlPoints = multMatrix(matrixA: scaleMatrix, matrixB: [[control.x - centerX],[control.y - centerY]]) else {return}
             
            
             
-                self.allPoints[index]?.viewPoint.center = CGPoint(x: scaledPoints[0][0] + centerX, y: scaledPoints[1][0] + centerY)
-                self.allPoints[index]?.controlPoint.center = CGPoint(x: scaledControlPoints[0][0] + centerX, y: scaledControlPoints[1][0] + centerY)
+                self.allPoints[index].viewPoint.center = CGPoint(x: scaledPoints[0][0] + centerX, y: scaledPoints[1][0] + centerY)
+                self.allPoints[index].controlPoint.center = CGPoint(x: scaledControlPoints[0][0] + centerX, y: scaledControlPoints[1][0] + centerY)
             
             updatePath(nil)
             
@@ -127,8 +127,9 @@ extension MainViewController {
     
     
     func drawCircle(initialPoint: CGPoint) -> CGPath {
-        allOriginalPoints = [Int:(point: CGPoint, controlPoint: CGPoint)]()
-        allPoints = [Int:(viewPoint: viewPoint,controlPoint: viewPoint)]()
+        prevSelectedPoint = (value: 0, isControl: false)
+        allOriginalPoints = [(point: CGPoint, controlPoint: CGPoint)]()
+        allPoints = [(viewPoint: viewPoint,controlPoint: viewPoint)]()
         view.subviews.forEach { (point) in
             if let point = point as? viewPoint {
                 point.removeFromSuperview()
@@ -156,25 +157,25 @@ extension MainViewController {
             
             view.addSubview(point)
             view.addSubview(controlPoint)
-            allOriginalPoints[index] = (point: currentPoint, controlPoint: midPoint)
-            allPoints[index] = (viewPoint: point, controlPoint: controlPoint)
+            allOriginalPoints.append((point: currentPoint, controlPoint: midPoint))
+            allPoints.append((viewPoint: point, controlPoint: controlPoint))
             
             
             if allPoints.count <= 1 {
                 bezierPath.move(to: currentPoint)
             } else {
-                bezierPath.addQuadCurve(to: allPoints[index]!.viewPoint.center, controlPoint: allPoints[index]!.controlPoint.center)
+                bezierPath.addQuadCurve(to: allPoints[index].viewPoint.center, controlPoint: allPoints[index].controlPoint.center)
             }
             
             
             lastPoint = currentPoint
         }
         
-        let firstControlPoint = allPoints[0]!.controlPoint
+        let firstControlPoint = allPoints[0].controlPoint
         firstControlPoint.removeFromSuperview()
         
-        let firstView = allPoints[0]!.viewPoint
-        let lastView = allPoints[allPoints.count - 1]!.viewPoint
+        let firstView = allPoints[0].viewPoint
+        let lastView = allPoints[allPoints.count - 1].viewPoint
         firstView.center = lastView.center
         bezierPath.close()
         
@@ -190,11 +191,11 @@ extension MainViewController {
         case .changed:
             
             if viewTouched.isControlPoint {
-                let controlToBeChanged = allPoints[viewTouched.keyValue]!.controlPoint
+                let controlToBeChanged = allPoints[viewTouched.keyValue].controlPoint
                 controlToBeChanged.center = location
                 updatePath(nil)
             } else {
-                let viewToBeChanged = allPoints[viewTouched.keyValue]!.viewPoint
+                let viewToBeChanged = allPoints[viewTouched.keyValue].viewPoint
                 viewToBeChanged.center = location
                 updatePath(nil)
             }
@@ -209,8 +210,8 @@ extension MainViewController {
     func updateAllOriginalPoints(){
         timerUpdate?.invalidate()
         timerUpdate = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: false, block: { (_) in
-            self.allOriginalPoints = [Int:(point: CGPoint, controlPoint: CGPoint)]()
-            self.allPoints.forEach { (dict) in self.allOriginalPoints[dict.key] = (point: dict.value.viewPoint.center, controlPoint: dict.value.controlPoint.center)}
+            self.allOriginalPoints = [(point: CGPoint, controlPoint: CGPoint)]()
+            self.allPoints.forEach { (tuple) in self.allOriginalPoints.append((point: tuple.viewPoint.center, controlPoint: tuple.controlPoint.center))}
             self.timerUpdate?.invalidate()
         })
     }
@@ -226,14 +227,14 @@ extension MainViewController {
 
         for index in 0 ..< allPoints.count {
             if firstIteration{
-                bezierPath.move(to: allPoints[allPoints.count - 1]!.viewPoint.center)
+                bezierPath.move(to: allPoints[allPoints.count - 1].viewPoint.center)
                 firstIteration = !firstIteration
                 continue
             }
             
-            let crestPoint = allPoints[index]!.controlPoint.center
-            let fromPoint = index == 1 ? allPoints[allPoints.count - 1]!.viewPoint.center : allPoints[index - 1]!.viewPoint.center
-            let toPoint = allPoints[index]!.viewPoint.center
+            let crestPoint = allPoints[index].controlPoint.center
+            let fromPoint = index == 1 ? allPoints[allPoints.count - 1].viewPoint.center : allPoints[index - 1].viewPoint.center
+            let toPoint = allPoints[index].viewPoint.center
             let fromCrestToX = fromPoint.x - crestPoint.x
             let fromCrestToY = fromPoint.y - crestPoint.y
             let toTouchX = toPoint.x - crestPoint.x
@@ -245,10 +246,10 @@ extension MainViewController {
             
             let control = CGPoint(x: pointX, y: pointY)
 
-            xSum += allPoints[index]!.controlPoint.center.x + allPoints[index]!.viewPoint.center.x
-            ySum += allPoints[index]!.controlPoint.center.y + allPoints[index]!.viewPoint.center.y
+            xSum += allPoints[index].controlPoint.center.x + allPoints[index].viewPoint.center.x
+            ySum += allPoints[index].controlPoint.center.y + allPoints[index].viewPoint.center.y
 
-            bezierPath.addQuadCurve(to: allPoints[index]!.viewPoint.center, controlPoint: control)
+            bezierPath.addQuadCurve(to: allPoints[index].viewPoint.center, controlPoint: control)
         }
         
         
@@ -258,8 +259,8 @@ extension MainViewController {
         
         
 
-        let firstView = allPoints[0]!.viewPoint
-        let lastView = allPoints[allPoints.count - 1]!.viewPoint
+        let firstView = allPoints[0].viewPoint
+        let lastView = allPoints[allPoints.count - 1].viewPoint
         firstView.center = lastView.center
         bezierPath.close()
         

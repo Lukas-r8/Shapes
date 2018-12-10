@@ -23,8 +23,8 @@ class MainViewController: UIViewController{
     
 
     
-    var allOriginalPoints = [Int:(point: CGPoint,controlPoint: CGPoint)]()
-    var allPoints = [Int:(viewPoint: viewPoint,controlPoint: viewPoint)]()
+    var allOriginalPoints = [(point: CGPoint,controlPoint: CGPoint)]()
+    var allPoints = [(viewPoint: viewPoint,controlPoint: viewPoint)]()
     
     var speechDelegate : VocalCommandController?
     
@@ -36,7 +36,7 @@ class MainViewController: UIViewController{
         mic.backgroundColor = UIColor.black
         mic.layer.cornerRadius = 40
         mic.setTitle("Registra", for: UIControl.State.normal)
-        mic.addTarget(self, action: #selector(microphoneTapped), for: UIControl.Event.touchUpInside)
+//        mic.addTarget(self, action: #selector(microphoneTapped), for: UIControl.Event.touchUpInside)
         return mic
     }()
     
@@ -246,13 +246,13 @@ class MainViewController: UIViewController{
         
         
         for i in 0 ..< allOriginalPoints.count {
-            let pt = allOriginalPoints[i]!.point
-            let cont = allOriginalPoints[i]!.controlPoint
+            let pt = allOriginalPoints[i].point
+            let cont = allOriginalPoints[i].controlPoint
             guard let rotatedPoint = multMatrix(matrixA: rotationMatrix, matrixB: [[pt.x - centerX],[pt.y - centerY]]) else {return}
             guard let rotatedControl = multMatrix(matrixA: rotationMatrix, matrixB: [[cont.x - centerX],[cont.y - centerY]]) else {return}
             
-                self.allPoints[i]!.viewPoint.center = CGPoint(x: rotatedPoint[0][0] + centerX, y: rotatedPoint[1][0] + centerY)
-                self.allPoints[i]!.controlPoint.center = CGPoint(x: rotatedControl[0][0] + centerX , y: rotatedControl[1][0] + centerY)
+                self.allPoints[i].viewPoint.center = CGPoint(x: rotatedPoint[0][0] + centerX, y: rotatedPoint[1][0] + centerY)
+                self.allPoints[i].controlPoint.center = CGPoint(x: rotatedControl[0][0] + centerX , y: rotatedControl[1][0] + centerY)
 
             updatePath(nil)
 
@@ -270,20 +270,36 @@ class MainViewController: UIViewController{
     func updateSelectedPoint() {
         if !(selectedPoint == prevSelectedPoint) {
             if selectedPoint.isControl {
-                 allPoints[selectedPoint.value]?.controlPoint.isSelectedPoint = true
+                 allPoints[selectedPoint.value].controlPoint.isSelectedPoint = true
             } else {
-                allPoints[selectedPoint.value]?.viewPoint.isSelectedPoint = true
+                allPoints[selectedPoint.value].viewPoint.isSelectedPoint = true
             }
 
             if prevSelectedPoint.isControl {
-                allPoints[prevSelectedPoint.value]?.controlPoint.isSelectedPoint = false
-            }else {
-                allPoints[prevSelectedPoint.value]?.viewPoint.isSelectedPoint = false
+                allPoints[prevSelectedPoint.value].controlPoint.isSelectedPoint = false
+            } else {
+                allPoints[prevSelectedPoint.value].viewPoint.isSelectedPoint = false
             }
         }
         prevSelectedPoint = selectedPoint
     }
     
+    
+    
+    func addPointBetween(_ index1: Int,_ index2: Int,_ isControl: Bool){
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    }
+    
+    
+    
 
 }
 
@@ -314,206 +330,206 @@ class MainViewController: UIViewController{
 
 
 
-extension MainViewController: SFSpeechRecognizerDelegate {
-    
-    func initRecording(){
-        microphoneButton.isEnabled = false
-        speechRecognizer?.delegate = self
-        
-        SFSpeechRecognizer.requestAuthorization { (authStatus) in
-            
-            var isButtonEnabled = false
-            
-            switch authStatus {
-            case .authorized:
-                isButtonEnabled = true
-                
-            case .denied:
-                isButtonEnabled = false
-                print("User denied access to speech recognition")
-                
-            case .restricted:
-                isButtonEnabled = false
-                print("Speech recognition restricted on this device")
-                
-            case .notDetermined:
-                isButtonEnabled = false
-                print("Speech recognition not yet authorized")
-            }
-            
-            OperationQueue.main.addOperation() {
-                self.microphoneButton.isEnabled = isButtonEnabled
-            }
-        }
-    }
-    
-    
-    
-    @objc func microphoneTapped(_ sender: UIButton) {
-        
-        if speechDelegate!.audioEngine.isRunning {
-            speechDelegate!.audioEngine.stop()
-            speechDelegate!.recognitionRequest?.endAudio()
-            microphoneButton.isEnabled = false
-            microphoneButton.setTitle("Registra", for: .normal)
-        } else {
-            speechDelegate!.startRecording()
-            microphoneButton.setTitle("Stop", for: .normal)
-        }
-        
-    }
-    
-    
-    func speechRecognizer(_ speechRecognizer: SFSpeechRecognizer, availabilityDidChange available: Bool) {
-        if available {
-            microphoneButton.isEnabled = true
-        } else {
-            microphoneButton.isEnabled = false
-        }
-    }
-    
-    
-    func startRecording() {
-        
-        if recognitionTask != nil {
-            recognitionTask?.cancel()
-            recognitionTask = nil
-        }
-        
-        let audioSession = AVAudioSession.sharedInstance()
-        do {
-            try audioSession.setCategory(.playAndRecord, mode: .default, options: [])
-            try audioSession.setMode(AVAudioSession.Mode.measurement)
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-            
-        } catch let err {
-            print("audioSession properties weren't set because of an error. error description:", err.localizedDescription)
-        }
-        
-        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-        
-        let inputNode = audioEngine.inputNode
-        
-        
-        guard let recognitionRequest = recognitionRequest else {fatalError("Unable to create an SFSpeechAudioBufferRecognitionRequest object")}
-        
-        recognitionRequest.shouldReportPartialResults = true
-        
-        recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest, resultHandler: { (result, error) in
-            
-            var isFinal = false
-            
-            
-            
-            if result != nil {
-                
-                self.valueLabel.text = result?.bestTranscription.formattedString
-                isFinal = (result?.isFinal)!
-            }
-            
-            
-            if error != nil || isFinal {
-                self.audioEngine.stop()
-                inputNode.removeTap(onBus: 0)
-                
-                self.recognitionRequest = nil
-                self.recognitionTask = nil
-                
-                self.microphoneButton.isEnabled = true
-                guard let str = self.valueLabel.text?.lowercased() else {return}
-                self.recordedText = str
-                
-                self.valueLabel.text = ""
-                
-                self.recognizeVocalCommand()
-                
-                
-                
-            }
-        })
-        
-        
-        
-        let recordingFormat = inputNode.outputFormat(forBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer, when) in
-            self.recognitionRequest?.append(buffer)
-        }
-        
-        audioEngine.prepare()
-        
-        do {
-            try audioEngine.start()
-        } catch let error {
-            print("audioEngine couldn't start because of an error.", error.localizedDescription)
-            return
-        }
-        
-        valueLabel.text = "In ascolto..."
-        
-    }
-    
-    
-    
-    func recognizeVocalCommand() {
-        
-        var numbersFromRecText = [CGFloat]()
-        let strArray = recordedText.replacingOccurrences(of: ",", with: ".").split(separator: Character(" "))
-        
-        for word in strArray {
-            if let number = Float(word) {
-                numbersFromRecText.append(CGFloat(number))
-            }
-            if let numFromStr = formateStrToNumber(str: String(word).lowercased()) {
-                numbersFromRecText.append(numFromStr)
-            }
-        }
-        
-        // manage vocal commands
-        
-        print("recorded text:",recordedText)
-        print("numbers:",numbersFromRecText)
-        
-        if recordedText.contains("scale"){
-            if numbersFromRecText.count != 0 {
-                let proportionValue = CGFloat(numbersFromRecText[0])
-                scaleFactor = proportionValue
-                updateProportion()
-            }
-        } else if recordedText.contains("rotate") {
-            if numbersFromRecText.count != 0 {
-                let radians = numbersFromRecText[0] * CGFloat.pi / 180
-                angle = radians
-                rotateAllPoints()
-                // ???????????????????????????????? maybe remove the line down below
-                updateAllOriginalPoints()
-                //??????????????????????????????????????
-            }
-        } else if recordedText.contains("draw") {
-            if numbersFromRecText.count != 0 {
-                let number = floor(numbersFromRecText[0])
-                shapePoints = number
-                shapeSlider.setValue(Float(number), animated: true)
-                shapeLayer.path = drawCircle(initialPoint: self.view.center)
-            }
-        } else if recordedText.contains("select"){
-            if numbersFromRecText.count > 0 && recordedText.contains("control") && recordedText.contains("number") {
-                selectedPoint = (value: Int(numbersFromRecText[0]), isControl: true)
-            } else if numbersFromRecText.count > 0 && recordedText.contains("number") {
-                selectedPoint = (value: Int(numbersFromRecText[0]), isControl: false)
-            }
-        }
-    }
-    
-    func formateStrToNumber(str: String) -> CGFloat?{
-        let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "en")
-        formatter.numberStyle = NumberFormatter.Style.spellOut
-        guard let number = formatter.number(from: str.lowercased()) else {return nil}
-        return CGFloat(truncating: number)
-    }
-    
-    
-    
-   
-    
-}
+//extension MainViewController: SFSpeechRecognizerDelegate {
+//
+//    func initRecording(){
+//        microphoneButton.isEnabled = false
+//        speechRecognizer?.delegate = self
+//
+//        SFSpeechRecognizer.requestAuthorization { (authStatus) in
+//
+//            var isButtonEnabled = false
+//
+//            switch authStatus {
+//            case .authorized:
+//                isButtonEnabled = true
+//
+//            case .denied:
+//                isButtonEnabled = false
+//                print("User denied access to speech recognition")
+//
+//            case .restricted:
+//                isButtonEnabled = false
+//                print("Speech recognition restricted on this device")
+//
+//            case .notDetermined:
+//                isButtonEnabled = false
+//                print("Speech recognition not yet authorized")
+//            }
+//
+//            OperationQueue.main.addOperation() {
+//                self.microphoneButton.isEnabled = isButtonEnabled
+//            }
+//        }
+//    }
+//
+//
+//
+//    @objc func microphoneTapped(_ sender: UIButton) {
+//
+//        if speechDelegate!.audioEngine.isRunning {
+//            speechDelegate!.audioEngine.stop()
+//            speechDelegate!.recognitionRequest?.endAudio()
+//            microphoneButton.isEnabled = false
+//            microphoneButton.setTitle("Registra", for: .normal)
+//        } else {
+//            speechDelegate!.startRecording()
+//            microphoneButton.setTitle("Stop", for: .normal)
+//        }
+//
+//    }
+//
+//
+//    func speechRecognizer(_ speechRecognizer: SFSpeechRecognizer, availabilityDidChange available: Bool) {
+//        if available {
+//            microphoneButton.isEnabled = true
+//        } else {
+//            microphoneButton.isEnabled = false
+//        }
+//    }
+//
+//
+//    func startRecording() {
+//
+//        if recognitionTask != nil {
+//            recognitionTask?.cancel()
+//            recognitionTask = nil
+//        }
+//
+//        let audioSession = AVAudioSession.sharedInstance()
+//        do {
+//            try audioSession.setCategory(.playAndRecord, mode: .default, options: [])
+//            try audioSession.setMode(AVAudioSession.Mode.measurement)
+//            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+//
+//        } catch let err {
+//            print("audioSession properties weren't set because of an error. error description:", err.localizedDescription)
+//        }
+//
+//        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
+//
+//        let inputNode = audioEngine.inputNode
+//
+//
+//        guard let recognitionRequest = recognitionRequest else {fatalError("Unable to create an SFSpeechAudioBufferRecognitionRequest object")}
+//
+//        recognitionRequest.shouldReportPartialResults = true
+//
+//        recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest, resultHandler: { (result, error) in
+//
+//            var isFinal = false
+//
+//
+//
+//            if result != nil {
+//
+//                self.valueLabel.text = result?.bestTranscription.formattedString
+//                isFinal = (result?.isFinal)!
+//            }
+//
+//
+//            if error != nil || isFinal {
+//                self.audioEngine.stop()
+//                inputNode.removeTap(onBus: 0)
+//
+//                self.recognitionRequest = nil
+//                self.recognitionTask = nil
+//
+//                self.microphoneButton.isEnabled = true
+//                guard let str = self.valueLabel.text?.lowercased() else {return}
+//                self.recordedText = str
+//
+//                self.valueLabel.text = ""
+//
+//                self.recognizeVocalCommand()
+//
+//
+//
+//            }
+//        })
+//
+//
+//
+//        let recordingFormat = inputNode.outputFormat(forBus: 0)
+//        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer, when) in
+//            self.recognitionRequest?.append(buffer)
+//        }
+//
+//        audioEngine.prepare()
+//
+//        do {
+//            try audioEngine.start()
+//        } catch let error {
+//            print("audioEngine couldn't start because of an error.", error.localizedDescription)
+//            return
+//        }
+//
+//        valueLabel.text = "In ascolto..."
+//
+//    }
+//
+//
+//
+//    func recognizeVocalCommand() {
+//
+//        var numbersFromRecText = [CGFloat]()
+//        let strArray = recordedText.replacingOccurrences(of: ",", with: ".").split(separator: Character(" "))
+//
+//        for word in strArray {
+//            if let number = Float(word) {
+//                numbersFromRecText.append(CGFloat(number))
+//            }
+//            if let numFromStr = formateStrToNumber(str: String(word).lowercased()) {
+//                numbersFromRecText.append(numFromStr)
+//            }
+//        }
+//
+//        // manage vocal commands
+//
+//        print("recorded text:",recordedText)
+//        print("numbers:",numbersFromRecText)
+//
+//        if recordedText.contains("scale"){
+//            if numbersFromRecText.count != 0 {
+//                let proportionValue = CGFloat(numbersFromRecText[0])
+//                scaleFactor = proportionValue
+//                updateProportion()
+//            }
+//        } else if recordedText.contains("rotate") {
+//            if numbersFromRecText.count != 0 {
+//                let radians = numbersFromRecText[0] * CGFloat.pi / 180
+//                angle = radians
+//                rotateAllPoints()
+//                // ???????????????????????????????? maybe remove the line down below
+//                updateAllOriginalPoints()
+//                //??????????????????????????????????????
+//            }
+//        } else if recordedText.contains("draw") {
+//            if numbersFromRecText.count != 0 {
+//                let number = floor(numbersFromRecText[0])
+//                shapePoints = number
+//                shapeSlider.setValue(Float(number), animated: true)
+//                shapeLayer.path = drawCircle(initialPoint: self.view.center)
+//            }
+//        } else if recordedText.contains("select"){
+//            if numbersFromRecText.count > 0 && recordedText.contains("control") && recordedText.contains("number") {
+//                selectedPoint = (value: Int(numbersFromRecText[0]), isControl: true)
+//            } else if numbersFromRecText.count > 0 && recordedText.contains("number") {
+//                selectedPoint = (value: Int(numbersFromRecText[0]), isControl: false)
+//            }
+//        }
+//    }
+//
+//    func formateStrToNumber(str: String) -> CGFloat?{
+//        let formatter = NumberFormatter()
+//        formatter.locale = Locale(identifier: "en")
+//        formatter.numberStyle = NumberFormatter.Style.spellOut
+//        guard let number = formatter.number(from: str.lowercased()) else {return nil}
+//        return CGFloat(truncating: number)
+//    }
+//
+//
+//
+//
+//
+//}
