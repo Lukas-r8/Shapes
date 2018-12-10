@@ -9,14 +9,25 @@
 import UIKit
 import Speech
 
-
 class MainViewController: UIViewController{
     var timerUpdate: Timer?
+
+    
+    var prevSelectedPoint = (value: 0, isControl: false )
+    
+    
+    var selectedPoint = (value: 0, isControl: false ) {
+        didSet{
+            updateSelectedPoint()
+        }
+    }
+    
+
     
     var allOriginalPoints = [Int:(point: CGPoint,controlPoint: CGPoint)]()
     var allPoints = [Int:(viewPoint: viewPoint,controlPoint: viewPoint)]()
     
-    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "it-IT"))
+    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en"))
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
@@ -64,7 +75,11 @@ class MainViewController: UIViewController{
     
     
     
-    var imageCenterPoint = CGPoint.zero
+    var imageCenterPoint = CGPoint.zero {
+        didSet{
+            centerImage.center = imageCenterPoint
+        }
+    }
     
     let centerImage: UIView = {
         let cnt  = UIView()
@@ -155,7 +170,7 @@ class MainViewController: UIViewController{
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
         label.textAlignment = .center
-        label.text = "Number of faces: \(floor(shapeSlider.value))"
+        label.text = "Number of points: \(floor(shapeSlider.value))"
         label.textColor = UIColor.black
         return label
     }()
@@ -187,7 +202,8 @@ class MainViewController: UIViewController{
         
         view.addSubview(centerImage)
         initRecording()
-
+        
+        
     }
     
   
@@ -195,6 +211,7 @@ class MainViewController: UIViewController{
     
     @objc func changeRotation(gesture: UIRotationGestureRecognizer){
         
+        // radians = angle * pi / 180 --> (radians * 180) / pi = angle
         
         switch gesture.state {
         case .began:
@@ -202,8 +219,8 @@ class MainViewController: UIViewController{
         case .changed:
             angle = gesture.rotation
             rotateAllPoints()
-            print(gesture.rotation,"angle:", angle)
         case .ended:
+            print("updating roattion points")
             updateAllOriginalPoints()
         default:
             break
@@ -238,8 +255,8 @@ class MainViewController: UIViewController{
             guard let rotatedPoint = multMatrix(matrixA: rotationMatrix, matrixB: [[pt.x - centerX],[pt.y - centerY]]) else {return}
             guard let rotatedControl = multMatrix(matrixA: rotationMatrix, matrixB: [[cont.x - centerX],[cont.y - centerY]]) else {return}
             
-            allPoints[i]!.viewPoint.center = CGPoint(x: rotatedPoint[0][0] + centerX, y: rotatedPoint[1][0] + centerY)
-            allPoints[i]!.controlPoint.center = CGPoint(x: rotatedControl[0][0] + centerX , y: rotatedControl[1][0] + centerY)
+                self.allPoints[i]!.viewPoint.center = CGPoint(x: rotatedPoint[0][0] + centerX, y: rotatedPoint[1][0] + centerY)
+                self.allPoints[i]!.controlPoint.center = CGPoint(x: rotatedControl[0][0] + centerX , y: rotatedControl[1][0] + centerY)
 
             updatePath(nil)
 
@@ -252,8 +269,53 @@ class MainViewController: UIViewController{
         
 //        updateAllOriginalPoints()
     }
+    
+    
+    func updateSelectedPoint() {
+        if !(selectedPoint == prevSelectedPoint) {
+            if selectedPoint.isControl {
+                 allPoints[selectedPoint.value]?.controlPoint.isSelectedPoint = true
+            } else {
+                allPoints[selectedPoint.value]?.viewPoint.isSelectedPoint = true
+            }
+
+            if prevSelectedPoint.isControl {
+                allPoints[prevSelectedPoint.value]?.controlPoint.isSelectedPoint = false
+            }else {
+                allPoints[prevSelectedPoint.value]?.viewPoint.isSelectedPoint = false
+            }
+        }
+        prevSelectedPoint = selectedPoint
+    }
+    
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 extension MainViewController: SFSpeechRecognizerDelegate {
@@ -324,12 +386,12 @@ extension MainViewController: SFSpeechRecognizerDelegate {
         
         let audioSession = AVAudioSession.sharedInstance()
         do {
-            try AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: .default, options: [])
+            try audioSession.setCategory(.playAndRecord, mode: .default, options: [])
             try audioSession.setMode(AVAudioSession.Mode.measurement)
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
             
-        } catch {
-            print("audioSession properties weren't set because of an error.")
+        } catch let err {
+            print("audioSession properties weren't set because of an error. error description:", err.localizedDescription)
         }
         
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
@@ -385,8 +447,8 @@ extension MainViewController: SFSpeechRecognizerDelegate {
         
         do {
             try audioEngine.start()
-        } catch {
-            print("audioEngine couldn't start because of an error.")
+        } catch let error {
+            print("audioEngine couldn't start because of an error.", error.localizedDescription)
             return
         }
         
@@ -410,46 +472,53 @@ extension MainViewController: SFSpeechRecognizerDelegate {
             }
         }
         
-        //       manage vocal commands
+        // manage vocal commands
         
         print("recorded text:",recordedText)
         print("numbers:",numbersFromRecText)
         
-        if recordedText.contains("scala"){
+        if recordedText.contains("scale"){
             if numbersFromRecText.count != 0 {
                 let proportionValue = CGFloat(numbersFromRecText[0])
                 scaleFactor = proportionValue
                 updateProportion()
             }
-        } else if recordedText.contains("ruota") {
+        } else if recordedText.contains("rotate") {
             if numbersFromRecText.count != 0 {
                 let radians = numbersFromRecText[0] * CGFloat.pi / 180
                 angle = radians
                 rotateAllPoints()
+                // ???????????????????????????????? maybe remove the line down below
+                updateAllOriginalPoints()
+                //??????????????????????????????????????
             }
-        } else if recordedText.contains("disegna") {
+        } else if recordedText.contains("draw") {
             if numbersFromRecText.count != 0 {
                 let number = floor(numbersFromRecText[0])
                 shapePoints = number
                 shapeSlider.setValue(Float(number), animated: true)
                 shapeLayer.path = drawCircle(initialPoint: self.view.center)
             }
+        } else if recordedText.contains("select"){
+            if numbersFromRecText.count > 0 && recordedText.contains("control") && recordedText.contains("number") {
+                selectedPoint = (value: Int(numbersFromRecText[0]), isControl: true)
+            } else if numbersFromRecText.count > 0 && recordedText.contains("number") {
+                selectedPoint = (value: Int(numbersFromRecText[0]), isControl: false)
+            }
         }
-        
-        
-        
-        
-        
-        
     }
     
     func formateStrToNumber(str: String) -> CGFloat?{
         let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "it-IT")
+        formatter.locale = Locale(identifier: "en")
         formatter.numberStyle = NumberFormatter.Style.spellOut
         guard let number = formatter.number(from: str.lowercased()) else {return nil}
         return CGFloat(truncating: number)
     }
+    
+    
+    
+   
     
 }
 

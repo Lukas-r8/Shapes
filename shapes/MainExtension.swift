@@ -16,19 +16,19 @@ extension MainViewController {
     @objc func changeX(sender: UISlider){
         xRadius = CGFloat(floor(sender.value))
         shapeLayer.path = drawCircle(initialPoint: view.center)
-        valueLabel.text = "Number of faces: \(floor(shapeSlider.value))"
+        valueLabel.text = "Number of points: \(floor(shapeSlider.value))"
     }
     
     @objc func changeY(sender: UISlider){
         yRadius = CGFloat(floor(sender.value))
         shapeLayer.path = drawCircle(initialPoint: view.center)
-        valueLabel.text = "Number of faces: \(floor(shapeSlider.value))"
+        valueLabel.text = "Number of points: \(floor(shapeSlider.value))"
     }
     
     @objc func changeNumberOfFaces(sender: UISlider){
         shapePoints = CGFloat(floor(shapeSlider.value))
         shapeLayer.path = drawCircle(initialPoint: view.center)
-        valueLabel.text = "Number of faces: \(floor(shapeSlider.value))"
+        valueLabel.text = "Number of points: \(floor(shapeSlider.value))"
     }
     
     @objc func changeProportion(gesture: UIPinchGestureRecognizer){
@@ -46,8 +46,11 @@ extension MainViewController {
         
        
  
-        valueLabel.text = "Number of faces: \(floor(shapeSlider.value))"
+        valueLabel.text = "Number of points: \(floor(shapeSlider.value))"
     }
+    
+    
+    
     
     func updateProportion(){
         let centerX = imageCenterPoint.x
@@ -63,16 +66,13 @@ extension MainViewController {
             
            
             
-            UIView.animate(withDuration: 1, animations: {
                 self.allPoints[index]?.viewPoint.center = CGPoint(x: scaledPoints[0][0] + centerX, y: scaledPoints[1][0] + centerY)
                 self.allPoints[index]?.controlPoint.center = CGPoint(x: scaledControlPoints[0][0] + centerX, y: scaledControlPoints[1][0] + centerY)
-            })
-            updatePath(nil)
             
+            updatePath(nil)
             
         }
         
-//        updateAllOriginalPoints()
     }
     
     
@@ -186,23 +186,21 @@ extension MainViewController {
         let location = pan.location(in: view)
         switch pan.state {
         case .began:
-            break
+            selectedPoint = (value: viewTouched.keyValue, isControl: viewTouched.isControlPoint)
         case .changed:
-
+            
             if viewTouched.isControlPoint {
                 let controlToBeChanged = allPoints[viewTouched.keyValue]!.controlPoint
                 controlToBeChanged.center = location
                 updatePath(nil)
-                centerImage.center = imageCenterPoint
-
             } else {
                 let viewToBeChanged = allPoints[viewTouched.keyValue]!.viewPoint
                 viewToBeChanged.center = location
                 updatePath(nil)
             }
+            
         case .ended:
             updateAllOriginalPoints()
-
         default:
             break
         }
@@ -247,14 +245,15 @@ extension MainViewController {
             
             let control = CGPoint(x: pointX, y: pointY)
 
-            xSum += allOriginalPoints[index]!.controlPoint.x + allOriginalPoints[index]!.point.x
-            ySum += allOriginalPoints[index]!.controlPoint.y + allOriginalPoints[index]!.point.y
-            
-            imageCenterPoint = CGPoint(x: xSum / divisor, y: ySum / divisor)
-
+            xSum += allPoints[index]!.controlPoint.center.x + allPoints[index]!.viewPoint.center.x
+            ySum += allPoints[index]!.controlPoint.center.y + allPoints[index]!.viewPoint.center.y
 
             bezierPath.addQuadCurve(to: allPoints[index]!.viewPoint.center, controlPoint: control)
         }
+        
+        
+        imageCenterPoint = CGPoint(x: xSum / divisor, y: ySum / divisor)
+        
         
         
         

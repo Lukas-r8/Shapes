@@ -12,7 +12,20 @@ import UIKit
 class viewPoint: UIView {
 
     var keyValue: Int
-    
+
+    var isSelectedPoint: Bool = false {
+        didSet{
+            if isSelectedPoint {
+                backgroundColor = .purple
+            } else {
+                if isControlPoint {
+                    backgroundColor = .green
+                } else {
+                    backgroundColor = .red
+                }
+            }
+        }
+    }
     
     lazy var identifierLabel: UILabel = {
         let label = UILabel()
@@ -56,9 +69,12 @@ class viewPoint: UIView {
         layer.shadowOpacity = 1
         layer.shadowOffset = CGSize(width: 0, height: 2)
         identifierLabel.center = center
-        identifierLabel.text = keyValue == 0 ? "K" : "\(keyValue)"
+        identifierLabel.text = keyValue == 0 ? "" : "\(keyValue)"
         addSubview(identifierLabel)
     }
+    
+    
+    
     
     
 }
