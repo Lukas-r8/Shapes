@@ -7,7 +7,6 @@
 //
 
 import UIKit
-import Speech
 
 class MainViewController: UIViewController{
     var timerUpdate: Timer?
@@ -27,10 +26,7 @@ class MainViewController: UIViewController{
     var allOriginalPoints = [Int:(point: CGPoint,controlPoint: CGPoint)]()
     var allPoints = [Int:(viewPoint: viewPoint,controlPoint: viewPoint)]()
     
-    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en"))
-    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
-    private var recognitionTask: SFSpeechRecognitionTask?
-    private let audioEngine = AVAudioEngine()
+    var speechDelegate : VocalCommandController?
     
     var recordedText = ""
     
@@ -199,11 +195,11 @@ class MainViewController: UIViewController{
         view.addGestureRecognizer(pinchGesture)
         view.addGestureRecognizer(rotationGesture)
         
+        speechDelegate = VocalCommandController(controller: self)
         
         view.addSubview(centerImage)
-        initRecording()
-        
-        
+        speechDelegate!.initRecording()
+
     }
     
   
@@ -355,13 +351,13 @@ extension MainViewController: SFSpeechRecognizerDelegate {
     
     @objc func microphoneTapped(_ sender: UIButton) {
         
-        if audioEngine.isRunning {
-            audioEngine.stop()
-            recognitionRequest?.endAudio()
+        if speechDelegate!.audioEngine.isRunning {
+            speechDelegate!.audioEngine.stop()
+            speechDelegate!.recognitionRequest?.endAudio()
             microphoneButton.isEnabled = false
             microphoneButton.setTitle("Registra", for: .normal)
         } else {
-            startRecording()
+            speechDelegate!.startRecording()
             microphoneButton.setTitle("Stop", for: .normal)
         }
         
@@ -521,10 +517,3 @@ extension MainViewController: SFSpeechRecognizerDelegate {
    
     
 }
-
-    
-    
-    
-    
-    
-
